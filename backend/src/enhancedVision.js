@@ -2,19 +2,26 @@ const OpenAI = require('openai');
 
 class EnhancedVisionService {
   constructor() {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
+    this.openai = null;
+  }
+
+  getOpenAI() {
+    if (!this.openai) {
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY environment variable is required');
+      }
+      this.openai = new OpenAI({ 
+        apiKey: process.env.OPENAI_API_KEY 
+      });
     }
-    
-    this.openai = new OpenAI({ 
-      apiKey: process.env.OPENAI_API_KEY 
-    });
+    return this.openai;
   }
 
   async detectItemsWithSizeEstimation(imageBase64) {
     try {
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4-vision-preview",
+      const openai = this.getOpenAI();
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
         messages: [
           {
             role: "user", 
@@ -27,6 +34,8 @@ class EnhancedVisionService {
 2. SIZE CALIBRATION: Use reference objects for accurate measurements
 3. SPATIAL RELATIONSHIPS: Estimate relative sizes and positions
 4. BOUNDING BOXES: Provide pixel coordinates for each item
+
+IMPORTANT: Always return valid JSON, even if no items are detected. If the image is unclear or contains no items, return empty arrays.
 
 Return ONLY valid JSON in this exact format:
 {
@@ -103,8 +112,19 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
         cleanContent = cleanContent.replace(/```\n/, '').replace(/\n```$/, '');
       }
 
-      const result = JSON.parse(cleanContent);
-      console.log('Enhanced Vision API Response:', JSON.stringify(result, null, 2));
+      let result;
+      try {
+        result = JSON.parse(cleanContent);
+        console.log('Enhanced Vision API Response:', JSON.stringify(result, null, 2));
+      } catch (parseError) {
+        console.error('Failed to parse JSON response. Raw content:', cleanContent);
+        // If JSON parsing fails, return empty result
+        result = {
+          items: [],
+          referenceObject: { found: false, type: 'none' },
+          imageAnalysis: { totalItems: 0, perspective: 'unknown', lighting: 'poor' }
+        };
+      }
       
       // Validate and enhance the response
       if (!result.items) {
@@ -155,7 +175,8 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
 
   async generatePackingImage(prompt) {
     try {
-      const response = await this.openai.images.generate({
+      const openai = this.getOpenAI();
+      const response = await openai.images.generate({
         model: "dall-e-3",
         prompt: prompt,
         n: 1,
