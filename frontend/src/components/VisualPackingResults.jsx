@@ -33,15 +33,22 @@ const VisualPackingResults = ({
       const progressInterval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 95) {
-            return prev; // Stop at 95% until actual completion
+            return 95; // Stay at 95% until actual completion
           }
-          return prev + Math.random() * 15; // Random increments
+          // Use smaller, controlled increments to prevent overflow
+          const increment = Math.random() * 5 + 2; // Random 2-7% increments
+          const newProgress = prev + increment;
+          return Math.min(newProgress, 95); // Cap at 95% max
         });
-      }, 500);
+      }, 800); // Slightly slower for more realistic feel
 
       return () => clearInterval(progressInterval);
     } else if (!loading && internalResults) {
-      setProgress(100);
+      // Small delay then smoothly animate to 100% when complete
+      const completeTimeout = setTimeout(() => {
+        setProgress(100);
+      }, 200);
+      return () => clearTimeout(completeTimeout);
     }
   }, [loading, internalResults]);
 
@@ -140,12 +147,12 @@ const VisualPackingResults = ({
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-gray-600">Generating AI Visuals</span>
-              <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
+              <span className="text-sm text-gray-600">{Math.min(Math.round(progress), 100)}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div 
                 className="bg-gradient-to-r from-primary-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
               ></div>
             </div>
           </div>
