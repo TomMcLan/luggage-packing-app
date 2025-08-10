@@ -327,29 +327,36 @@ Quality: Photorealistic packing demonstration with precise measurements.`;
       console.error('Failed to get efficiency tips in prompt:', e);
       tips = []; // Use empty array as fallback
     }
-    const itemsList = items.map(item => item.name).join(', ');
-    const itemCount = items.length;
     
-    return `Professional overhead photograph of expertly packed ${container.visualDescription || 'black travel suitcase'} demonstrating space-maximizing techniques.
+    // Get detailed description of the original items
+    let detailedItemDescription = '';
+    try {
+      detailedItemDescription = await this.createDetailedItemDescription(originalImageUrl, items);
+    } catch (error) {
+      console.error('Failed to create detailed item description:', error);
+      detailedItemDescription = `${items.length} items including ${items.map(item => item.name).join(', ')}`;
+    }
+    
+    return `Professional overhead photograph of expertly packed ${container.visualDescription || 'black travel suitcase'} demonstrating maximum space efficiency.
 
-ITEMS PACKED: ${itemCount} items including ${itemsList}
+SPECIFIC ITEMS TO PACK: ${detailedItemDescription}
 
-PACKING TECHNIQUE: Expert efficiency method showing:
-- Tightly rolled clothes to minimize space
-- Shoes filled with small items (socks, chargers)
-- Heavy items at bottom, lighter items layered on top
-- Every gap filled with flexible items
-- Compression techniques visible
+EXPERT PACKING TECHNIQUES SHOWN:
+- Clothes tightly rolled to minimize space usage
+- Shoes utilized as containers for small items (socks, cables, chargers)
+- Strategic layering: heaviest items at bottom, progressively lighter items on top
+- Every available gap filled with flexible or small items
+- Visible compression and space-saving methods applied
 
 VISUAL COMPOSITION:
 - Top-down view of open suitcase interior
-- All ${itemCount} items clearly visible and identifiable
-- Professional organization with no wasted space
-- Items arranged by size and weight efficiently
+- All items from the description clearly visible and identifiable
+- Expert-level organization with zero wasted space
+- Professional arrangement showing maximum efficiency
 - Clean, well-lit product photography
-- Realistic textures and colors
+- Realistic textures and colors matching the original items
 
-STYLE: Tutorial-quality travel packing demonstration, professional photography lighting, sharp focus on organized efficiency.`;
+STYLE: Professional travel packing tutorial demonstration, expert-level efficiency showcase.`;
   }
 
   async createAccessibilityPrompt(originalImageUrl, container, items) {
@@ -399,27 +406,96 @@ Quality: Smart traveler's perfectly organized luggage demonstration.`;
     const itemsList = items.length > 0 ? items.map(item => item.name).join(', ') : 'travel items';
     const itemCount = items.length;
     
-    // Create detailed description for DALL-E 2 since it can't see original image
-    return `Professional overhead photograph of an open ${container.visualDescription || 'black travel suitcase'} with ${itemCount} items neatly organized inside.
+    // Use GPT-4o Vision to create a detailed description of the original items
+    let detailedItemDescription = '';
+    try {
+      detailedItemDescription = await this.createDetailedItemDescription(originalImageUrl, items);
+    } catch (error) {
+      console.error('Failed to create detailed item description:', error);
+      detailedItemDescription = `${itemCount} items including ${itemsList}`;
+    }
+    
+    return `Professional overhead photograph of an open ${container.visualDescription || 'black travel suitcase'} with items neatly organized inside.
 
-ITEMS TO SHOW: ${itemsList}
+SPECIFIC ITEMS TO RECREATE: ${detailedItemDescription}
 
-LAYOUT: Top-down view showing:
-- Open suitcase with clearly visible interior compartments
-- All ${itemCount} items (${itemsList}) arranged neatly inside
-- Each item clearly identifiable and realistically sized
-- Professional organization with items grouped logically
-- Heavy items at bottom, lighter items on top
+LAYOUT REQUIREMENTS:
+- Top-down view of open suitcase interior
+- Each item positioned clearly and identifiable
+- Professional organization with logical grouping
+- Items arranged by size: heavy items at bottom, lighter on top
+- Efficient use of space with items fitting neatly
 
-VISUAL STYLE:
+VISUAL SPECIFICATIONS:
 - Clean product photography lighting
 - Sharp focus on all items
-- Neutral background
-- Realistic colors and textures
+- Realistic colors and textures matching described items
 - Professional travel photography style
-- No text or labels
+- Neutral background
+- No text, labels, or branding
 
-COMPOSITION: Overhead shot, well-lit, showing efficient space utilization in ${container.name || 'travel luggage'}.`;
+COMPOSITION: Overhead shot showing efficient packing of the specific items described above in ${container.name || 'travel luggage'}.`;
+  }
+
+  async createDetailedItemDescription(originalImageUrl, items) {
+    console.log('Creating detailed item description using GPT-4o Vision...');
+    
+    try {
+      const openai = this.getOpenAI();
+      
+      // Use the stored original image to create detailed descriptions
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Please provide a detailed visual description of each item in this image for AI image generation. Focus on:
+- Specific colors, materials, and textures
+- Approximate sizes relative to each other
+- Distinctive features, patterns, or shapes
+- How items are positioned or arranged
+- Any unique characteristics that would help recreate them visually
+
+Format as: "Item 1: [detailed description], Item 2: [detailed description]" etc.
+
+Detected items list: ${items.map(item => item.name).join(', ')}`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: originalImageUrl,
+                  detail: "high"
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3
+      });
+
+      const detailedDescription = response.choices[0].message.content;
+      console.log('Detailed item description created:', detailedDescription);
+      return detailedDescription;
+      
+    } catch (error) {
+      console.error('Error creating detailed item description:', error);
+      return items.map(item => `${item.name} (${item.category || 'travel item'})`).join(', ');
+    }
+  }
+
+  getOpenAI() {
+    if (!this.openai) {
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY environment variable is required');
+      }
+      const OpenAI = require('openai');
+      this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    }
+    return this.openai;
   }
 
   async generateAIVisuals(layouts, originalImageUrl, container, sessionId) {
