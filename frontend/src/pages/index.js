@@ -55,12 +55,9 @@ export default function Home() {
     
     try {
       if (generateVisuals) {
-        // Use visual packing API with AI-generated images
-        const result = await execute(() => 
-          apiService.generateVisualPacking(originalImageFile, selectedLuggage.id)
-        );
-        setVisualResults(result);
+        // Immediately redirect to visual packing results page with loading state
         setCurrentStep(STEPS.VISUAL_PACKING);
+        // Results will be loaded by the VisualPackingResults component
       } else {
         // Use traditional recommendations API
         const result = await execute(() => 
@@ -196,8 +193,11 @@ export default function Home() {
             <VisualPackingResults
               visualResults={visualResults}
               selectedLuggage={selectedLuggage}
+              originalImageFile={originalImageFile}
+              confirmedItems={confirmedItems}
               onStartOver={handleStartOver}
               onBack={handleBack}
+              onVisualResults={setVisualResults}
             />
           )}
 

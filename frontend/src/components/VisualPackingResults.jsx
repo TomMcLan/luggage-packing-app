@@ -1,9 +1,63 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useApi } from '../hooks/useApi';
+import { apiService } from '../utils/api';
 
-const VisualPackingResults = ({ visualResults, selectedLuggage, onStartOver, onBack }) => {
+const VisualPackingResults = ({ 
+  visualResults, 
+  selectedLuggage, 
+  originalImageFile, 
+  confirmedItems,
+  onStartOver, 
+  onBack, 
+  onVisualResults 
+}) => {
   const [selectedLayout, setSelectedLayout] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
   const [savedLayouts, setSavedLayouts] = useState(new Set());
+  const [internalResults, setInternalResults] = useState(visualResults);
+  const [progress, setProgress] = useState(0);
+  
+  const { loading, error, execute } = useApi();
+
+  // Load visual packing results if not provided
+  useEffect(() => {
+    if (!internalResults && originalImageFile && selectedLuggage) {
+      loadVisualPackingResults();
+    }
+  }, [internalResults, originalImageFile, selectedLuggage]);
+
+  // Simulate progress bar during loading
+  useEffect(() => {
+    if (loading) {
+      setProgress(0);
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) {
+            return prev; // Stop at 95% until actual completion
+          }
+          return prev + Math.random() * 15; // Random increments
+        });
+      }, 500);
+
+      return () => clearInterval(progressInterval);
+    } else if (!loading && internalResults) {
+      setProgress(100);
+    }
+  }, [loading, internalResults]);
+
+  const loadVisualPackingResults = async () => {
+    try {
+      const result = await execute(() => 
+        apiService.generateVisualPacking(originalImageFile, selectedLuggage.id)
+      );
+      setInternalResults(result);
+      if (onVisualResults) {
+        onVisualResults(result);
+      }
+    } catch (err) {
+      console.error('Error loading visual packing results:', err);
+    }
+  };
 
   const toggleSaveLayout = (layoutId) => {
     setSavedLayouts(prev => {
@@ -63,7 +117,114 @@ const VisualPackingResults = ({ visualResults, selectedLuggage, onStartOver, onB
     return stars;
   };
 
-  if (!visualResults?.packing_visuals || visualResults.packing_visuals.length === 0) {
+  // Show loading state
+  if (loading || (!internalResults && originalImageFile)) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to photo upload
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">AI Visual Packing Generator</h1>
+          <p className="text-gray-600">Creating optimized packing layouts...</p>
+        </div>
+
+        <div className="card p-8">
+          {/* Progress Bar */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-600">Generating AI Visuals</span>
+              <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-primary-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Loading Animation and Status */}
+          <div className="text-center">
+            <div className="relative mx-auto mb-6 w-20 h-20">
+              <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-primary-50 to-purple-50 flex items-center justify-center">
+                <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-800">Creating Your Packing Visuals</h3>
+              <div className="space-y-1 text-sm text-gray-600">
+                {progress < 20 && <p>🧠 Analyzing your items and luggage size...</p>}
+                {progress >= 20 && progress < 40 && <p>📐 Calculating optimal space utilization...</p>}
+                {progress >= 40 && progress < 60 && <p>🎨 Generating AI-powered packing layouts...</p>}
+                {progress >= 60 && progress < 80 && <p>✨ Creating professional packing visuals...</p>}
+                {progress >= 80 && progress < 95 && <p>🔧 Finalizing your personalized results...</p>}
+                {progress >= 95 && <p>🎉 Almost ready! Preparing your packing strategies...</p>}
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <span className="font-medium">✨ AI Magic in Progress:</span> We're creating 4-5 different packing strategies with professional-quality visuals tailored specifically for your items and {selectedLuggage?.name.toLowerCase() || 'luggage'}.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to photo upload
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Visual Packing Results</h1>
+        </div>
+
+        <div className="card p-8 text-center">
+          <div className="text-red-400 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-4">Failed to generate visual packing results.</p>
+          <p className="text-sm text-red-600 mb-4">{error}</p>
+          <div className="space-y-2">
+            <button onClick={loadVisualPackingResults} className="btn-primary mr-2">
+              Try Again
+            </button>
+            <button onClick={onStartOver} className="btn-secondary">
+              Start Over
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no results state
+  if (!internalResults?.packing_visuals || internalResults.packing_visuals.length === 0) {
     return (
       <div className="space-y-6">
         <div className="text-center">
@@ -82,7 +243,7 @@ const VisualPackingResults = ({ visualResults, selectedLuggage, onStartOver, onB
         <div className="card p-8 text-center">
           <div className="text-gray-400 mb-4">
             <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <p className="text-gray-600 mb-4">No visual packing results available.</p>
@@ -94,7 +255,7 @@ const VisualPackingResults = ({ visualResults, selectedLuggage, onStartOver, onB
     );
   }
 
-  const currentLayout = visualResults.packing_visuals[selectedLayout];
+  const currentLayout = internalResults.packing_visuals[selectedLayout];
 
   return (
     <div className="space-y-6">
@@ -114,7 +275,7 @@ const VisualPackingResults = ({ visualResults, selectedLuggage, onStartOver, onB
 
       {/* Layout Selection Tabs */}
       <div className="flex overflow-x-auto space-x-1 p-1 bg-gray-100 rounded-lg">
-        {visualResults.packing_visuals.map((layout, index) => (
+        {internalResults.packing_visuals.map((layout, index) => (
           <button
             key={layout.id}
             onClick={() => setSelectedLayout(index)}
@@ -212,7 +373,7 @@ const VisualPackingResults = ({ visualResults, selectedLuggage, onStartOver, onB
           </div>
           
           <div className="text-center">
-            <p className="font-semibold text-gray-900">{visualResults.packing_statistics?.luggage_type}</p>
+            <p className="font-semibold text-gray-900">{internalResults.packing_statistics?.luggage_type}</p>
             <p className="text-xs text-gray-500 mt-1">Luggage Type</p>
           </div>
         </div>
@@ -293,24 +454,24 @@ const VisualPackingResults = ({ visualResults, selectedLuggage, onStartOver, onB
       </div>
 
       {/* Overall Statistics */}
-      {visualResults.packing_statistics && (
+      {internalResults.packing_statistics && (
         <div className="card p-4">
           <h3 className="font-semibold text-gray-900 mb-3">Packing Analysis</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-gray-900">{visualResults.packing_statistics.total_items}</p>
+              <p className="text-2xl font-bold text-gray-900">{internalResults.packing_statistics.total_items}</p>
               <p className="text-sm text-gray-500">Total Items</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{visualResults.packing_statistics.efficiency}%</p>
+              <p className="text-2xl font-bold text-gray-900">{internalResults.packing_statistics.efficiency}%</p>
               <p className="text-sm text-gray-500">Pack Efficiency</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{visualResults.packing_statistics.totalItemVolume}L</p>
+              <p className="text-2xl font-bold text-gray-900">{internalResults.packing_statistics.totalItemVolume}L</p>
               <p className="text-sm text-gray-500">Item Volume</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{visualResults.packing_statistics.remainingSpace}L</p>
+              <p className="text-2xl font-bold text-gray-900">{internalResults.packing_statistics.remainingSpace}L</p>
               <p className="text-sm text-gray-500">Remaining Space</p>
             </div>
           </div>
