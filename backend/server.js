@@ -12,6 +12,8 @@ const db = require('./src/database');
 const visionService = require('./src/vision');
 const recommendationEngine = require('./src/recommendations');
 const cloudinaryService = require('./src/cloudinary');
+const visualGenerator = require('./src/visualGenerator');
+const enhancedVision = require('./src/enhancedVision');
 
 const app = express();
 
@@ -118,7 +120,7 @@ app.post('/api/luggage/select', async (req, res) => {
   }
 });
 
-// POST /api/items/detect - Detect items in image using AI
+// POST /api/items/detect - Detect items in image using Enhanced AI
 app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -131,15 +133,28 @@ app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res
     // Convert to base64 for OpenAI Vision
     const imageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     
-    // Detect items using AI
-    const detection = await visionService.detectItemsInImage(imageBase64);
+    // Use enhanced vision service for detailed item detection with size estimation
+    console.log('Starting enhanced vision detection...');
+    const detection = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
+    console.log('Detection completed, items found:', detection.items?.length || 0);
     
-    res.json({
+    // Transform enhanced vision format to match existing frontend expectations
+    const compatibleResponse = {
       success: true,
-      ...detection,
+      items: detection.items || [],
+      referenceFound: detection.referenceObject?.found || false,
+      referenceType: detection.referenceObject?.type || 'none',
       image_url: uploadResult.url,
-      image_id: uploadResult.public_id
-    });
+      image_id: uploadResult.public_id,
+      // Include enhanced data for advanced features
+      enhancedData: {
+        referenceObject: detection.referenceObject,
+        imageAnalysis: detection.imageAnalysis,
+        boundingBoxes: detection.items?.map(item => item.boundingBox) || []
+      }
+    };
+    
+    res.json(compatibleResponse);
   } catch (error) {
     console.error('Error detecting items:', error);
     
@@ -154,6 +169,72 @@ app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res
     
     res.status(500).json({ 
       error: 'Failed to detect items in image',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// POST /api/generate-packing-visuals - Generate visual packing with AI
+app.post('/api/generate-packing-visuals', aiLimiter, upload.single('image'), async (req, res) => {
+  try {
+    const { luggage_size } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
+    }
+    
+    if (!luggage_size) {
+      return res.status(400).json({ error: 'Luggage size is required' });
+    }
+
+    // Upload to Cloudinary for storage
+    const uploadResult = await cloudinaryService.uploadImage(req.file.buffer);
+    
+    // Convert to base64 for OpenAI Vision
+    const imageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    
+    // Use enhanced vision service for detailed item detection with size estimation
+    const detectionResult = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
+    
+    if (!detectionResult.items || detectionResult.items.length === 0) {
+      return res.status(400).json({ 
+        error: 'No items detected in the image',
+        details: 'Please ensure your photo shows clear items to pack'
+      });
+    }
+
+    // Generate visual packing layouts with AI-generated images
+    const visualResults = await visualGenerator.generatePackingVisuals(
+      detectionResult.items,
+      luggage_size,
+      detectionResult.referenceObject,
+      uploadResult.url
+    );
+    
+    res.json({
+      success: true,
+      ...visualResults,
+      image_analysis: detectionResult.imageAnalysis,
+      upload_info: {
+        image_url: uploadResult.url,
+        image_id: uploadResult.public_id
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error generating packing visuals:', error);
+    
+    // Clean up uploaded image if generation failed
+    if (req.uploadResult?.public_id) {
+      try {
+        await cloudinaryService.deleteImage(req.uploadResult.public_id);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup uploaded image:', cleanupError);
+      }
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to generate packing visuals',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

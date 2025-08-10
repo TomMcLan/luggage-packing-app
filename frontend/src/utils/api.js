@@ -59,6 +59,27 @@ export const apiService = {
     return response;
   },
 
+  // Generate visual packing with AI
+  generateVisualPacking: async (imageUrl, luggageSize) => {
+    // Convert image URL to File object by fetching it
+    const imageResponse = await fetch(imageUrl);
+    const imageBlob = await imageResponse.blob();
+    const imageFile = new File([imageBlob], 'packing-image.jpg', { type: imageBlob.type });
+    
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('luggage_size', luggageSize);
+    
+    const response = await api.post('/api/generate-packing-visuals', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 120000, // Extra long timeout for AI image generation
+    });
+    
+    return response;
+  },
+
   // Get packing recommendations
   getRecommendations: async (items, luggageSize, sessionId = null) => {
     const response = await api.post('/api/recommendations', {

@@ -5,6 +5,7 @@ import LuggageSelector from '../components/LuggageSelector';
 import PhotoUpload from '../components/PhotoUpload';
 import ItemConfirmation from '../components/ItemConfirmation';
 import PackingResults from '../components/PackingResults';
+import VisualPackingResults from '../components/VisualPackingResults';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../utils/api';
@@ -13,7 +14,8 @@ const STEPS = {
   LUGGAGE_SELECTION: 'luggage-selection',
   PHOTO_UPLOAD: 'photo-upload',
   ITEM_CONFIRMATION: 'item-confirmation',
-  PACKING_RESULTS: 'packing-results'
+  PACKING_RESULTS: 'packing-results',
+  VISUAL_PACKING: 'visual-packing'
 };
 
 export default function Home() {
@@ -22,7 +24,9 @@ export default function Home() {
   const [detectedItems, setDetectedItems] = useState(null);
   const [confirmedItems, setConfirmedItems] = useState([]);
   const [recommendations, setRecommendations] = useState(null);
+  const [visualResults, setVisualResults] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
+  const [useVisualPacking, setUseVisualPacking] = useState(false);
   const [sessionId] = useState(() => uuidv4());
   
   const { loading, error, execute } = useApi();
@@ -38,15 +42,31 @@ export default function Home() {
     setCurrentStep(STEPS.ITEM_CONFIRMATION);
   };
 
-  const handleItemsConfirmed = async (items) => {
+  const handleVisualPackingGenerated = (result) => {
+    setVisualResults(result);
+    setCurrentStep(STEPS.VISUAL_PACKING);
+  };
+
+  const handleItemsConfirmed = async (items, generateVisuals = false) => {
     setConfirmedItems(items);
+    setUseVisualPacking(generateVisuals);
     
     try {
-      const result = await execute(() => 
-        apiService.getRecommendations(items, selectedLuggage.id, sessionId)
-      );
-      setRecommendations(result);
-      setCurrentStep(STEPS.PACKING_RESULTS);
+      if (generateVisuals) {
+        // Use visual packing API with AI-generated images
+        const result = await execute(() => 
+          apiService.generateVisualPacking(imageUrl, selectedLuggage.id)
+        );
+        setVisualResults(result);
+        setCurrentStep(STEPS.VISUAL_PACKING);
+      } else {
+        // Use traditional recommendations API
+        const result = await execute(() => 
+          apiService.getRecommendations(items, selectedLuggage.id, sessionId)
+        );
+        setRecommendations(result);
+        setCurrentStep(STEPS.PACKING_RESULTS);
+      }
     } catch (err) {
       console.error('Error getting recommendations:', err);
     }
@@ -58,7 +78,9 @@ export default function Home() {
     setDetectedItems(null);
     setConfirmedItems([]);
     setRecommendations(null);
+    setVisualResults(null);
     setImageUrl(null);
+    setUseVisualPacking(false);
   };
 
   const handleBack = () => {
@@ -71,6 +93,9 @@ export default function Home() {
         break;
       case STEPS.PACKING_RESULTS:
         setCurrentStep(STEPS.ITEM_CONFIRMATION);
+        break;
+      case STEPS.VISUAL_PACKING:
+        setCurrentStep(STEPS.PHOTO_UPLOAD);
         break;
       default:
         break;
@@ -86,6 +111,8 @@ export default function Home() {
       case STEPS.ITEM_CONFIRMATION:
         return 75;
       case STEPS.PACKING_RESULTS:
+        return 100;
+      case STEPS.VISUAL_PACKING:
         return 100;
       default:
         return 0;
@@ -113,7 +140,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
-                Step {Object.values(STEPS).indexOf(currentStep) + 1} of 4
+                Step {Object.values(STEPS).indexOf(currentStep) + 1} of {useVisualPacking ? '5' : '4'}
               </span>
               <span className="text-sm text-gray-500">
                 {Math.round(getProgressPercentage())}% Complete
@@ -156,6 +183,15 @@ export default function Home() {
           {currentStep === STEPS.PACKING_RESULTS && (
             <PackingResults
               recommendations={recommendations}
+              selectedLuggage={selectedLuggage}
+              onStartOver={handleStartOver}
+              onBack={handleBack}
+            />
+          )}
+
+          {currentStep === STEPS.VISUAL_PACKING && (
+            <VisualPackingResults
+              visualResults={visualResults}
               selectedLuggage={selectedLuggage}
               onStartOver={handleStartOver}
               onBack={handleBack}
