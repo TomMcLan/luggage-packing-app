@@ -15,6 +15,7 @@ const cloudinaryService = require('./src/cloudinary');
 const visualGenerator = require('./src/visualGenerator');
 const enhancedVision = require('./src/enhancedVision');
 const hybridDetection = require('./src/hybridDetection');
+const comprehensiveVisualGenerator = require('./src/comprehensiveVisualGenerator');
 
 const app = express();
 
@@ -181,10 +182,10 @@ app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res
   }
 });
 
-// POST /api/generate-packing-visuals - Generate visual packing with AI
+// POST /api/generate-packing-visuals - Generate comprehensive visual packing with AI
 app.post('/api/generate-packing-visuals', aiLimiter, upload.single('image'), async (req, res) => {
   try {
-    const { luggage_size } = req.body;
+    const { luggage_size, travel_type, session_id } = req.body;
     
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
@@ -194,55 +195,54 @@ app.post('/api/generate-packing-visuals', aiLimiter, upload.single('image'), asy
       return res.status(400).json({ error: 'Luggage size is required' });
     }
 
-    // Upload to Cloudinary for storage
-    const uploadResult = await cloudinaryService.uploadImage(req.file.buffer);
+    console.log('Starting comprehensive visual packing generation...');
+    console.log('Luggage type:', luggage_size);
+    console.log('Travel type:', travel_type || 'leisure');
+    console.log('Image file:', req.file.originalname, req.file.size, 'bytes');
+
+    // Use comprehensive visual generator with all databases
+    const comprehensiveResults = await comprehensiveVisualGenerator.generateComprehensivePackingVisuals(
+      req.file,
+      luggage_size,
+      {
+        travelType: travel_type || 'leisure',
+        sessionId: session_id || `session-${Date.now()}`
+      }
+    );
     
-    // Convert to base64 for OpenAI Vision
-    const imageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    
-    // Use enhanced vision service for detailed item detection with size estimation
-    const detectionResult = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
-    
-    if (!detectionResult.items || detectionResult.items.length === 0) {
-      return res.status(400).json({ 
-        error: 'No items detected in the image',
-        details: 'Please ensure your photo shows clear items to pack'
+    if (!comprehensiveResults.success) {
+      return res.status(500).json({
+        error: 'Failed to generate comprehensive packing visuals',
+        details: comprehensiveResults.error,
+        generationSteps: comprehensiveResults.generationSteps
       });
     }
 
-    // Generate visual packing layouts with AI-generated images
-    const visualResults = await visualGenerator.generatePackingVisuals(
-      detectionResult.items,
-      luggage_size,
-      detectionResult.referenceObject,
-      uploadResult.url
-    );
+    console.log('Comprehensive generation completed successfully');
+    console.log('Generated layouts:', comprehensiveResults.packingLayouts?.length || 0);
+    console.log('Generation time:', comprehensiveResults.statistics?.generationTime, 'ms');
     
     res.json({
       success: true,
-      ...visualResults,
-      image_analysis: detectionResult.imageAnalysis,
-      upload_info: {
-        image_url: uploadResult.url,
-        image_id: uploadResult.public_id
-      }
+      sessionId: comprehensiveResults.sessionId,
+      packing_visuals: comprehensiveResults.packingLayouts,
+      original_image: comprehensiveResults.originalImage,
+      container_info: comprehensiveResults.container,
+      detected_items: comprehensiveResults.detectedItems,
+      organization_template: comprehensiveResults.organizationTemplate,
+      professional_tips: comprehensiveResults.professionalTips,
+      packing_statistics: comprehensiveResults.statistics,
+      reference_calibration: comprehensiveResults.referenceCalibration,
+      generation_steps: comprehensiveResults.generationSteps
     });
     
   } catch (error) {
-    console.error('Error generating packing visuals:', error);
-    
-    // Clean up uploaded image if generation failed
-    if (req.uploadResult?.public_id) {
-      try {
-        await cloudinaryService.deleteImage(req.uploadResult.public_id);
-      } catch (cleanupError) {
-        console.error('Failed to cleanup uploaded image:', cleanupError);
-      }
-    }
+    console.error('Error in comprehensive visual generation:', error);
     
     res.status(500).json({ 
-      error: 'Failed to generate packing visuals',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: 'Failed to generate comprehensive packing visuals',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });
