@@ -34,46 +34,85 @@ class ComprehensiveVisualGenerator {
 
       // Step 2: Analyze original image for reference objects and items
       this.generationSteps.push('Analyzing original image for items and reference objects...');
-      const detectionResult = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
+      let detectionResult;
+      try {
+        detectionResult = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
+      } catch (detectionError) {
+        console.error('Vision detection failed, using fallback:', detectionError);
+        detectionResult = {
+          items: [{ name: 'travel items', category: 'accessories', confidence: 0.5 }],
+          referenceObject: { found: false, type: 'none' },
+          imageAnalysis: { totalItems: 1, perspective: 'unknown', lighting: 'good' }
+        };
+        this.generationSteps.push('Vision detection failed, using basic fallback');
+      }
       
       // Step 3: Get container information
       this.generationSteps.push('Loading container specifications...');
-      const container = containerDatabase.getContainer(luggageType);
+      let container = containerDatabase.getContainer(luggageType);
       if (!container) {
-        throw new Error(`Unknown luggage type: ${luggageType}`);
+        console.error(`Unknown luggage type: ${luggageType}, using fallback`);
+        // Create fallback container
+        container = {
+          id: luggageType,
+          name: `${luggageType} luggage`,
+          visualDescription: `${luggageType} travel luggage`,
+          internalDimensions: { width: 500, height: 350, depth: 200, volume: 35 }
+        };
+        this.generationSteps.push(`Using fallback container for ${luggageType}`);
       }
+      const finalContainer = container;
 
       // Step 4: Determine reference scale
       this.generationSteps.push('Calculating size references and proportions...');
       let referenceCalibration = null;
-      if (detectionResult.referenceObject && detectionResult.referenceObject.found) {
-        const refObj = referenceDatabase.getReferenceObject(detectionResult.referenceObject.type);
-        if (refObj) {
-          referenceCalibration = referenceDatabase.calculatePixelRatio(
-            detectionResult.referenceObject,
-            detectionResult.referenceObject.boundingBox
-          );
+      try {
+        if (detectionResult.referenceObject && detectionResult.referenceObject.found) {
+          const refObj = referenceDatabase.getReferenceObject(detectionResult.referenceObject.type);
+          if (refObj) {
+            referenceCalibration = referenceDatabase.calculatePixelRatio(
+              detectionResult.referenceObject,
+              detectionResult.referenceObject.boundingBox
+            );
+          }
         }
+      } catch (refError) {
+        console.error('Reference calibration failed:', refError);
+        this.generationSteps.push('Reference calibration failed, proceeding without calibration');
       }
 
       // Step 5: Select organization template
       this.generationSteps.push('Selecting optimal organization template...');
-      const template = organizationTemplates.recommendTemplate(
-        luggageType, 
-        detectedResult.items || [],
-        options.travelType || 'leisure'
-      );
+      let template = null;
+      try {
+        template = organizationTemplates.recommendTemplate(
+          luggageType, 
+          detectionResult.items || [],
+          options.travelType || 'leisure'
+        );
+      } catch (templateError) {
+        console.error('Template selection failed:', templateError);
+        this.generationSteps.push('Template selection failed, using basic organization');
+      }
 
       // Step 6: Get relevant pro tips
       this.generationSteps.push('Gathering professional organizing tips...');
-      const relevantTips = organizingProTips.getTipsForItems(detectionResult.items || []);
-      const efficiencyTips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
+      let relevantTips = [], efficiencyTips = [];
+      try {
+        relevantTips = organizingProTips.getTipsForItems(detectionResult.items || []);
+        efficiencyTips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
+      } catch (tipsError) {
+        console.error('Pro tips failed:', tipsError);
+        this.generationSteps.push('Pro tips unavailable, using basic guidance');
+        relevantTips = [];
+        efficiencyTips = [];
+      }
 
       // Step 7: Generate multiple packing layouts
       this.generationSteps.push('Creating multiple packing layout strategies...');
       const layouts = await this.generateMultipleLayouts(
         detectionResult.items || [],
-        container,
+        finalContainer,
         template,
         referenceCalibration,
         imageStorageResult.imageUrl
@@ -97,7 +136,7 @@ class ComprehensiveVisualGenerator {
           secureUrl: imageStorageResult.secureUrl,
           metadata: imageStorageResult.metadata
         },
-        container: container,
+        container: finalContainer,
         detectedItems: detectionResult.items || [],
         referenceCalibration: referenceCalibration,
         organizationTemplate: template,
@@ -109,8 +148,8 @@ class ComprehensiveVisualGenerator {
         },
         statistics: {
           totalItems: detectionResult.items?.length || 0,
-          containerCapacity: container.internalDimensions.volume,
-          estimatedEfficiency: this.calculatePackingEfficiency(detectionResult.items || [], container),
+          containerCapacity: finalContainer.internalDimensions.volume,
+          estimatedEfficiency: this.calculatePackingEfficiency(detectionResult.items || [], finalContainer),
           referenceFound: detectionResult.referenceObject?.found || false,
           generationTime: Date.now() - startTime
         },
@@ -134,52 +173,85 @@ class ComprehensiveVisualGenerator {
   async generateMultipleLayouts(items, container, template, referenceCalibration, originalImageUrl) {
     const layouts = [];
 
-    // Layout 1: Template-based organization
-    if (template) {
+    try {
+      // Layout 1: Template-based organization (if template available)
+      if (template) {
+        layouts.push({
+          id: 'template-based',
+          name: `${template.name}`,
+          method: 'Template Organization',
+          description: template.description,
+          strategy: 'template-based',
+          template: template,
+          prompt: await this.createTemplateBasedPrompt(originalImageUrl, container, template, items)
+        });
+      }
+
+      // Layout 2: Size-optimized based on reference calibration (if available)
+      if (referenceCalibration && referenceCalibration.confidence > 0.7) {
+        layouts.push({
+          id: 'size-optimized',
+          name: 'Precision Size-Based Layout',
+          method: 'Size Optimization',
+          description: 'Layout optimized using precise size measurements from reference objects',
+          strategy: 'size-optimized',
+          referenceCalibration: referenceCalibration,
+          prompt: await this.createSizeOptimizedPrompt(originalImageUrl, container, items, referenceCalibration)
+        });
+      }
+
+      // Layout 3: Professional efficiency layout
+      let efficiencyTips = [];
+      try {
+        efficiencyTips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
+      } catch (e) {
+        console.error('Failed to get efficiency tips:', e);
+      }
+
       layouts.push({
-        id: 'template-based',
-        name: `${template.name}`,
-        method: 'Template Organization',
-        description: template.description,
-        strategy: 'template-based',
-        template: template,
-        prompt: await this.createTemplateBasedPrompt(originalImageUrl, container, template, items)
+        id: 'pro-efficiency',
+        name: 'Professional Efficiency Layout',
+        method: 'Maximum Efficiency',
+        description: 'Space-maximizing layout using professional packing techniques',
+        strategy: 'pro-efficiency',
+        tips: efficiencyTips,
+        prompt: await this.createProEfficiencyPrompt(originalImageUrl, container, items)
+      });
+
+      // Layout 4: Travel-ready accessibility
+      layouts.push({
+        id: 'travel-ready',
+        name: 'Travel Accessibility Layout',
+        method: 'Easy Access',
+        description: 'Organized for easy access to essentials during travel',
+        strategy: 'accessibility',
+        prompt: await this.createAccessibilityPrompt(originalImageUrl, container, items)
+      });
+
+      // Fallback: If no layouts generated, create a basic one
+      if (layouts.length === 0) {
+        layouts.push({
+          id: 'basic-packing',
+          name: 'Basic Packing Layout',
+          method: 'Simple Organization',
+          description: 'Basic organized packing layout',
+          strategy: 'basic',
+          prompt: await this.createBasicPrompt(originalImageUrl, container, items)
+        });
+      }
+
+    } catch (error) {
+      console.error('Error generating layouts:', error);
+      // Ensure at least one basic layout
+      layouts.push({
+        id: 'fallback-packing',
+        name: 'Fallback Packing Layout',
+        method: 'Basic Packing',
+        description: 'Simple packing arrangement',
+        strategy: 'fallback',
+        prompt: await this.createBasicPrompt(originalImageUrl, container, items)
       });
     }
-
-    // Layout 2: Size-optimized based on reference calibration
-    if (referenceCalibration && referenceCalibration.confidence > 0.7) {
-      layouts.push({
-        id: 'size-optimized',
-        name: 'Precision Size-Based Layout',
-        method: 'Size Optimization',
-        description: 'Layout optimized using precise size measurements from reference objects',
-        strategy: 'size-optimized',
-        referenceCalibration: referenceCalibration,
-        prompt: await this.createSizeOptimizedPrompt(originalImageUrl, container, items, referenceCalibration)
-      });
-    }
-
-    // Layout 3: Professional efficiency layout
-    layouts.push({
-      id: 'pro-efficiency',
-      name: 'Professional Efficiency Layout',
-      method: 'Maximum Efficiency',
-      description: 'Space-maximizing layout using professional packing techniques',
-      strategy: 'pro-efficiency',
-      tips: organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3),
-      prompt: await this.createProEfficiencyPrompt(originalImageUrl, container, items)
-    });
-
-    // Layout 4: Travel-ready accessibility
-    layouts.push({
-      id: 'travel-ready',
-      name: 'Travel Accessibility Layout',
-      method: 'Easy Access',
-      description: 'Organized for easy access to essentials during travel',
-      strategy: 'accessibility',
-      prompt: await this.createAccessibilityPrompt(originalImageUrl, container, items)
-    });
 
     return layouts;
   }
@@ -247,7 +319,13 @@ Quality: Photorealistic packing demonstration with precise measurements.`;
   }
 
   async createProEfficiencyPrompt(originalImageUrl, container, items) {
-    const tips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
+    let tips = [];
+    try {
+      tips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
+    } catch (e) {
+      console.error('Failed to get efficiency tips in prompt:', e);
+      tips = []; // Use empty array as fallback
+    }
     const itemsList = items.map(item => `${item.name} (${item.category})`).join(', ');
     
     return `Expert-level packing photography: Demonstrate professional space-maximizing techniques with all items from reference photo in ${container.visualDescription}.
@@ -317,6 +395,32 @@ VISUAL RESULT:
 - Clean, organized appearance suitable for business travel
 
 Quality: Smart traveler's perfectly organized luggage demonstration.`;
+  }
+
+  async createBasicPrompt(originalImageUrl, container, items) {
+    const itemsList = items.length > 0 ? items.map(item => item.name).join(', ') : 'travel items from photo';
+    
+    return `Professional packing photography: Organize all items from the reference photo into ${container.visualDescription || 'luggage container'}.
+
+REFERENCE ITEMS: ${itemsList}
+
+CONTAINER: ${container.name || 'Travel luggage'}
+${container.internalDimensions ? `- Internal space: ${container.internalDimensions.width} × ${container.internalDimensions.height} × ${container.internalDimensions.depth}mm` : ''}
+
+PACKING APPROACH:
+- Place heavy items at bottom for stability
+- Organize similar items together
+- Use available space efficiently
+- Keep frequently used items accessible
+
+VISUAL REQUIREMENTS:
+- Top-down view of open luggage
+- All items from reference photo visible and organized
+- Clean, professional presentation
+- Realistic proportions and spacing
+- Good lighting showing all details
+
+Style: Clean, organized packing demonstration with professional quality.`;
   }
 
   async generateAIVisuals(layouts, originalImageUrl, container, sessionId) {
