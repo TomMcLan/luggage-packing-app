@@ -174,21 +174,23 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
   }
 
   async generatePackingImage(prompt) {
+    console.log('Generating medium quality packing image...');
+    
     try {
       const openai = this.getOpenAI();
+      
+      // Use DALL-E 2 for medium quality, faster generation and lower cost
       const response = await openai.images.generate({
-        model: "dall-e-3",
+        model: "dall-e-2",
         prompt: prompt,
         n: 1,
-        size: "1024x1024",
-        quality: "hd",
-        style: "natural"
+        size: "512x512" // Medium quality size - faster and more economical
       });
       
       return response.data[0].url;
       
     } catch (error) {
-      console.error('DALL-E Image Generation Error:', error);
+      console.error('Image Generation Error:', error);
       throw new Error(`Failed to generate packing image: ${error.message}`);
     }
   }

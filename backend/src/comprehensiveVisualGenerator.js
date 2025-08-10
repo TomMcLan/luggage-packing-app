@@ -37,6 +37,7 @@ class ComprehensiveVisualGenerator {
       let detectionResult;
       try {
         detectionResult = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
+        console.log('Detected items for visual generation:', JSON.stringify(detectionResult.items, null, 2));
       } catch (detectionError) {
         console.error('Vision detection failed, using fallback:', detectionError);
         detectionResult = {
@@ -326,32 +327,29 @@ Quality: Photorealistic packing demonstration with precise measurements.`;
       console.error('Failed to get efficiency tips in prompt:', e);
       tips = []; // Use empty array as fallback
     }
-    const itemsList = items.map(item => `${item.name} (${item.category})`).join(', ');
+    const itemsList = items.map(item => item.name).join(', ');
+    const itemCount = items.length;
     
-    return `Expert-level packing photography: Demonstrate professional space-maximizing techniques with all items from reference photo in ${container.visualDescription}.
+    return `Professional overhead photograph of expertly packed ${container.visualDescription || 'black travel suitcase'} demonstrating space-maximizing techniques.
 
-REFERENCE ITEMS: ${itemsList}
+ITEMS PACKED: ${itemCount} items including ${itemsList}
 
-PROFESSIONAL TECHNIQUES TO APPLY:
-${tips.map(tip => `• ${tip.title}: ${tip.description} (${tip.spaceSaving}% space saving)`).join('\n')}
+PACKING TECHNIQUE: Expert efficiency method showing:
+- Tightly rolled clothes to minimize space
+- Shoes filled with small items (socks, chargers)
+- Heavy items at bottom, lighter items layered on top
+- Every gap filled with flexible items
+- Compression techniques visible
 
-CONTAINER: ${container.name} (${container.internalDimensions.volume}L capacity)
+VISUAL COMPOSITION:
+- Top-down view of open suitcase interior
+- All ${itemCount} items clearly visible and identifiable
+- Professional organization with no wasted space
+- Items arranged by size and weight efficiently
+- Clean, well-lit product photography
+- Realistic textures and colors
 
-EFFICIENCY STRATEGIES:
-- Roll clothing items tightly to minimize space
-- Use internal shoe space for small items
-- Layer items by weight (heavy to light, bottom to top)
-- Fill all gaps with flexible items
-- Use compression techniques where possible
-
-VISUAL DEMONSTRATION:
-- Overhead view showing maximum space utilization
-- Items packed with professional precision
-- Visible compression and space-saving techniques
-- Clean organization with no wasted space
-- Professional travel consultant quality results
-
-Result: Tutorial-quality demonstration of expert packing efficiency.`;
+STYLE: Tutorial-quality travel packing demonstration, professional photography lighting, sharp focus on organized efficiency.`;
   }
 
   async createAccessibilityPrompt(originalImageUrl, container, items) {
@@ -398,29 +396,30 @@ Quality: Smart traveler's perfectly organized luggage demonstration.`;
   }
 
   async createBasicPrompt(originalImageUrl, container, items) {
-    const itemsList = items.length > 0 ? items.map(item => item.name).join(', ') : 'travel items from photo';
+    const itemsList = items.length > 0 ? items.map(item => item.name).join(', ') : 'travel items';
+    const itemCount = items.length;
     
-    return `Professional packing photography: Organize all items from the reference photo into ${container.visualDescription || 'luggage container'}.
+    // Create detailed description for DALL-E 2 since it can't see original image
+    return `Professional overhead photograph of an open ${container.visualDescription || 'black travel suitcase'} with ${itemCount} items neatly organized inside.
 
-REFERENCE ITEMS: ${itemsList}
+ITEMS TO SHOW: ${itemsList}
 
-CONTAINER: ${container.name || 'Travel luggage'}
-${container.internalDimensions ? `- Internal space: ${container.internalDimensions.width} × ${container.internalDimensions.height} × ${container.internalDimensions.depth}mm` : ''}
+LAYOUT: Top-down view showing:
+- Open suitcase with clearly visible interior compartments
+- All ${itemCount} items (${itemsList}) arranged neatly inside
+- Each item clearly identifiable and realistically sized
+- Professional organization with items grouped logically
+- Heavy items at bottom, lighter items on top
 
-PACKING APPROACH:
-- Place heavy items at bottom for stability
-- Organize similar items together
-- Use available space efficiently
-- Keep frequently used items accessible
+VISUAL STYLE:
+- Clean product photography lighting
+- Sharp focus on all items
+- Neutral background
+- Realistic colors and textures
+- Professional travel photography style
+- No text or labels
 
-VISUAL REQUIREMENTS:
-- Top-down view of open luggage
-- All items from reference photo visible and organized
-- Clean, professional presentation
-- Realistic proportions and spacing
-- Good lighting showing all details
-
-Style: Clean, organized packing demonstration with professional quality.`;
+COMPOSITION: Overhead shot, well-lit, showing efficient space utilization in ${container.name || 'travel luggage'}.`;
   }
 
   async generateAIVisuals(layouts, originalImageUrl, container, sessionId) {
@@ -431,6 +430,11 @@ Style: Clean, organized packing demonstration with professional quality.`;
       this.generationSteps.push(`Generating visual ${i+1}/${layouts.length}: ${layout.name}...`);
       
       try {
+        // Log the prompt being sent to DALL-E
+        console.log(`\n=== DALL-E PROMPT FOR ${layout.name} ===`);
+        console.log(layout.prompt);
+        console.log('=== END PROMPT ===\n');
+        
         // Generate AI image using DALL-E
         const imageUrl = await enhancedVision.generatePackingImage(layout.prompt);
         

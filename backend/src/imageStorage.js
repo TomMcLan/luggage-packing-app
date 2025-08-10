@@ -112,7 +112,7 @@ class ImageStorageService {
           method: generationData.method || 'unknown',
           luggageType: generationData.luggageType,
           itemCount: generationData.itemCount,
-          aiModel: generationData.aiModel || 'dall-e-3'
+          aiModel: generationData.aiModel || 'dall-e-2'
         },
         type: 'generated-visual',
         status: 'stored'
@@ -198,7 +198,7 @@ class ImageStorageService {
       originalImageUrl: originalImageUrl,
       analysisData: analysisData,
       referenceCreatedAt: new Date().toISOString(),
-      usage: 'dall-e-reference'
+      usage: 'ai-image-reference'
     };
   }
 
