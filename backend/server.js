@@ -135,15 +135,10 @@ app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res
     // Convert to base64 for OpenAI Vision
     const imageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     
-    // Use hybrid detection service combining multiple approaches
-    console.log('Starting hybrid detection with multiple approaches...');
-    const detection = await hybridDetection.detectItemsWithMultipleApproaches(imageBase64);
-    console.log('Hybrid detection completed, items found:', detection.items?.length || 0);
-    
-    if (detection.hybridResults) {
-      console.log('Detection steps:', detection.hybridResults.processingSteps);
-      console.log('Overall confidence:', detection.hybridResults.confidence);
-    }
+    // Use enhanced vision API directly for faster detection
+    console.log('Starting enhanced vision detection...');
+    const detection = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
+    console.log('Vision detection completed, items found:', detection.items?.length || 0);
     
     // Transform enhanced vision format to match existing frontend expectations
     const compatibleResponse = {
@@ -157,8 +152,7 @@ app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res
       enhancedData: {
         referenceObject: detection.referenceObject,
         imageAnalysis: detection.imageAnalysis,
-        boundingBoxes: detection.items?.map(item => item.boundingBox) || [],
-        hybridResults: detection.hybridResults
+        boundingBoxes: detection.items?.map(item => item.boundingBox) || []
       }
     };
     
