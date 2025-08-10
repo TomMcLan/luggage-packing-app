@@ -174,24 +174,26 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
   }
 
   async generatePackingImage(prompt) {
-    console.log('Generating medium quality packing image...');
+    console.log('Testing "gpt-image-1" model...');
     
     try {
       const openai = this.getOpenAI();
       
-      // Use DALL-E 2 for medium quality, faster generation and lower cost
+      // Test "gpt-image-1" model as requested
       const response = await openai.images.generate({
-        model: "dall-e-2",
+        model: "gpt-image-1",
         prompt: prompt,
         n: 1,
-        size: "512x512" // Medium quality size - faster and more economical
+        size: "1024x1024" // Using 1024x1024 as shown in the curl example
       });
       
+      console.log('SUCCESS: gpt-image-1 model worked!');
       return response.data[0].url;
       
     } catch (error) {
-      console.error('Image Generation Error:', error);
-      throw new Error(`Failed to generate packing image: ${error.message}`);
+      console.error('Image Generation Error with gpt-image-1:', error);
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+      throw new Error(`Failed to generate packing image with gpt-image-1: ${error.message}`);
     }
   }
 }
