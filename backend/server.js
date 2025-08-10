@@ -14,6 +14,7 @@ const recommendationEngine = require('./src/recommendations');
 const cloudinaryService = require('./src/cloudinary');
 const visualGenerator = require('./src/visualGenerator');
 const enhancedVision = require('./src/enhancedVision');
+const hybridDetection = require('./src/hybridDetection');
 
 const app = express();
 
@@ -133,10 +134,15 @@ app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res
     // Convert to base64 for OpenAI Vision
     const imageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     
-    // Use enhanced vision service for detailed item detection with size estimation
-    console.log('Starting enhanced vision detection...');
-    const detection = await enhancedVision.detectItemsWithSizeEstimation(imageBase64);
-    console.log('Detection completed, items found:', detection.items?.length || 0);
+    // Use hybrid detection service combining multiple approaches
+    console.log('Starting hybrid detection with multiple approaches...');
+    const detection = await hybridDetection.detectItemsWithMultipleApproaches(imageBase64);
+    console.log('Hybrid detection completed, items found:', detection.items?.length || 0);
+    
+    if (detection.hybridResults) {
+      console.log('Detection steps:', detection.hybridResults.processingSteps);
+      console.log('Overall confidence:', detection.hybridResults.confidence);
+    }
     
     // Transform enhanced vision format to match existing frontend expectations
     const compatibleResponse = {
@@ -150,7 +156,8 @@ app.post('/api/items/detect', aiLimiter, upload.single('image'), async (req, res
       enhancedData: {
         referenceObject: detection.referenceObject,
         imageAnalysis: detection.imageAnalysis,
-        boundingBoxes: detection.items?.map(item => item.boundingBox) || []
+        boundingBoxes: detection.items?.map(item => item.boundingBox) || [],
+        hybridResults: detection.hybridResults
       }
     };
     
@@ -306,6 +313,58 @@ app.get('/api/methods', async (req, res) => {
     console.error('Error fetching packing methods:', error);
     res.status(500).json({ 
       error: 'Failed to fetch packing methods',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// GET /api/product-suggestions - Get product suggestions for autocomplete
+app.get('/api/product-suggestions', async (req, res) => {
+  try {
+    const { query, category } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
+    
+    const productDatabase = require('./src/productDatabase');
+    let suggestions = productDatabase.getProductSuggestions(query, 10);
+    
+    if (category) {
+      suggestions = suggestions.filter(s => s.category === category);
+    }
+    
+    res.json({
+      success: true,
+      query,
+      suggestions
+    });
+  } catch (error) {
+    console.error('Error getting product suggestions:', error);
+    res.status(500).json({
+      error: 'Failed to get product suggestions',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// GET /api/products/categories - Get products by category
+app.get('/api/products/categories/:category', async (req, res) => {
+  try {
+    const { category } = req.params;
+    const productDatabase = require('./src/productDatabase');
+    
+    const products = productDatabase.getProductsByCategory(category);
+    
+    res.json({
+      success: true,
+      category,
+      products
+    });
+  } catch (error) {
+    console.error('Error getting products by category:', error);
+    res.status(500).json({
+      error: 'Failed to get products by category',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
