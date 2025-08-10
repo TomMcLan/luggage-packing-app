@@ -50,7 +50,7 @@ const PhotoUpload = ({ onItemsDetected, onBack }) => {
 
     try {
       const result = await execute(() => apiService.detectItems(selectedFile));
-      onItemsDetected(result);
+      onItemsDetected(result, selectedFile);
     } catch (err) {
       console.error('Error detecting items:', err);
     }

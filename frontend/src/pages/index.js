@@ -26,6 +26,7 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState(null);
   const [visualResults, setVisualResults] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
+  const [originalImageFile, setOriginalImageFile] = useState(null);
   const [useVisualPacking, setUseVisualPacking] = useState(false);
   const [sessionId] = useState(() => uuidv4());
   
@@ -36,9 +37,10 @@ export default function Home() {
     setCurrentStep(STEPS.PHOTO_UPLOAD);
   };
 
-  const handleItemsDetected = (result) => {
+  const handleItemsDetected = (result, originalFile) => {
     setDetectedItems(result);
     setImageUrl(result.image_url);
+    setOriginalImageFile(originalFile);
     setCurrentStep(STEPS.ITEM_CONFIRMATION);
   };
 
@@ -55,7 +57,7 @@ export default function Home() {
       if (generateVisuals) {
         // Use visual packing API with AI-generated images
         const result = await execute(() => 
-          apiService.generateVisualPacking(imageUrl, selectedLuggage.id)
+          apiService.generateVisualPacking(originalImageFile, selectedLuggage.id)
         );
         setVisualResults(result);
         setCurrentStep(STEPS.VISUAL_PACKING);
@@ -80,6 +82,7 @@ export default function Home() {
     setRecommendations(null);
     setVisualResults(null);
     setImageUrl(null);
+    setOriginalImageFile(null);
     setUseVisualPacking(false);
   };
 

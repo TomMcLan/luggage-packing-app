@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://luggage-packing-app-production.up.railway.app';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -60,11 +60,8 @@ export const apiService = {
   },
 
   // Generate visual packing with AI
-  generateVisualPacking: async (imageUrl, luggageSize) => {
-    // Convert image URL to File object by fetching it
-    const imageResponse = await fetch(imageUrl);
-    const imageBlob = await imageResponse.blob();
-    const imageFile = new File([imageBlob], 'packing-image.jpg', { type: imageBlob.type });
+  generateVisualPacking: async (imageFile, luggageSize) => {
+    console.log('Generating visual packing with:', { imageFile: imageFile?.name, luggageSize, apiUrl: API_BASE_URL });
     
     const formData = new FormData();
     formData.append('image', imageFile);
@@ -77,6 +74,7 @@ export const apiService = {
       timeout: 120000, // Extra long timeout for AI image generation
     });
     
+    console.log('Visual packing response:', response);
     return response;
   },
 
