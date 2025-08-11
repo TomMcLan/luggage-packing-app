@@ -49,23 +49,21 @@ export default function Home() {
     setCurrentStep(STEPS.VISUAL_PACKING);
   };
 
-  const handleItemsConfirmed = async (items, generateVisuals = false) => {
+  const handleItemsConfirmed = async (items) => {
     setConfirmedItems(items);
-    setUseVisualPacking(generateVisuals);
+    setUseVisualPacking(true); // Always generate visual packing now
     
     try {
-      if (generateVisuals) {
-        // Immediately redirect to visual packing results page with loading state
-        setCurrentStep(STEPS.VISUAL_PACKING);
-        // Results will be loaded by the VisualPackingResults component
-      } else {
-        // Use traditional recommendations API
-        const result = await execute(() => 
-          apiService.getRecommendations(items, selectedLuggage.id, sessionId)
-        );
-        setRecommendations(result);
-        setCurrentStep(STEPS.PACKING_RESULTS);
-      }
+      // Get traditional recommendations first (faster)
+      const result = await execute(() => 
+        apiService.getRecommendations(items, selectedLuggage.id, sessionId)
+      );
+      setRecommendations(result);
+      
+      // Immediately redirect to visual packing results page with loading state
+      // Both traditional recommendations and visual AI results will be shown
+      setCurrentStep(STEPS.VISUAL_PACKING);
+      // Visual results will be loaded by the VisualPackingResults component
     } catch (err) {
       console.error('Error getting recommendations:', err);
     }
@@ -192,6 +190,7 @@ export default function Home() {
           {currentStep === STEPS.VISUAL_PACKING && (
             <VisualPackingResults
               visualResults={visualResults}
+              traditionalRecommendations={recommendations}
               selectedLuggage={selectedLuggage}
               originalImageFile={originalImageFile}
               confirmedItems={confirmedItems}

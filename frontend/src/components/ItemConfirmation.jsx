@@ -305,100 +305,90 @@ const ItemConfirmation = ({ detectedItems, imageUrl, onItemsConfirmed, onBack })
 
       {items.length > 0 && (
         <div className="space-y-6 pt-4">
-          {/* Feature Selection */}
+          {/* What You'll Get */}
           <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Your Packing Experience</h3>
-            <div className="grid md:grid-cols-2 gap-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">What You'll Get</h3>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
               {/* Traditional Recommendations */}
-              <div className="relative">
-                <button
-                  onClick={() => onItemsConfirmed(items.map(({ id, tempName, tempCategory, ...rest }) => ({
-                    ...rest,
-                    name: tempName,
-                    category: tempCategory
-                  })), false)}
-                  className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all group"
-                >
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              <div className="p-4 border border-gray-200 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Traditional Recommendations</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Text-based packing methods and step-by-step instructions
+                    </p>
+                    <div className="flex items-center mt-2 text-xs text-green-600">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">
-                        Traditional Recommendations
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Get text-based packing methods and step-by-step instructions
-                      </p>
-                      <div className="flex items-center mt-3 text-xs text-green-600">
-                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Fast • Free
-                      </div>
+                      Fast • Detailed • Professional
                     </div>
                   </div>
-                </button>
+                </div>
               </div>
 
               {/* Visual AI Packing */}
-              <div className="relative">
-                <button
-                  onClick={() => onItemsConfirmed(items.map(({ id, tempName, tempCategory, ...rest }) => ({
-                    ...rest,
-                    name: tempName,
-                    category: tempCategory
-                  })), true)}
-                  className="w-full p-6 text-left border-2 border-primary-200 bg-gradient-to-br from-primary-50 to-purple-50 rounded-lg hover:border-primary-300 hover:from-primary-100 hover:to-purple-100 transition-all group relative"
-                >
-                  <div className="absolute top-2 right-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                      ✨ AI Powered
-                    </span>
+              <div className="p-4 border border-primary-200 rounded-lg bg-gradient-to-br from-primary-50 to-purple-50 relative">
+                <div className="absolute top-2 right-2">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                    ✨ AI Powered
+                  </span>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
+                    </svg>
                   </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center group-hover:from-purple-200 group-hover:to-pink-200 transition-colors">
-                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Visual AI Packing</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      GPT-Image-1 generated images with 2-3 optimal packing layouts
+                    </p>
+                    <div className="flex items-center mt-2 text-xs text-purple-600">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">
-                        Visual AI Packing
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Get AI-generated images showing 2-3 optimal packing layouts
-                      </p>
-                      <div className="flex items-center mt-3 text-xs text-purple-600">
-                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        Advanced • DALL-E 3 • High Quality
-                      </div>
+                      Advanced • GPT-Image-1 • High Quality
                     </div>
                   </div>
-                </button>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <div className="p-4 bg-blue-50 rounded-lg mb-6">
               <div className="flex items-start space-x-3">
                 <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-blue-800">Visual AI Packing Features</p>
+                  <p className="text-sm font-medium text-blue-800">Complete Packing Solution</p>
                   <ul className="text-sm text-blue-700 mt-1 space-y-1">
+                    <li>• Professional text-based recommendations and tips</li>
                     <li>• Real-world size estimation using reference objects</li>
                     <li>• 2-3 different packing strategies with AI-generated visuals</li>
-                    <li>• 3D simulation with optimal item placement</li>
                     <li>• Detailed labeling and instructions for each layout</li>
                   </ul>
                 </div>
               </div>
             </div>
+
+            <button
+              onClick={handleConfirmItems}
+              className="w-full btn-primary text-lg py-4 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-200"
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Generate Complete Packing Solution</span>
+              </div>
+            </button>
           </div>
         </div>
       )}
