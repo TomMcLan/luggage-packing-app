@@ -174,38 +174,57 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
   }
 
   async generatePackingImage(prompt) {
-    console.log('Generating packing image with DALL-E 3...');
+    console.log('Generating packing image with GPT-Image-1...');
     console.log('Prompt length:', prompt.length, 'characters');
     const startTime = Date.now();
     
     try {
       const openai = this.getOpenAI();
       
-      console.log('Sending request to DALL-E 3...');
+      console.log('Sending request to GPT-Image-1...');
       const response = await openai.images.generate({
-        model: "dall-e-3",
+        model: "gpt-image-1",
         prompt: prompt,
         n: 1,
         size: "1024x1024",
-        quality: "standard",
-        style: "natural"
+        quality: "medium" // GPT-Image-1 uses: low, medium, high, auto
       });
       
       const generationTime = Date.now() - startTime;
-      console.log(`DALL-E 3 generation successful in ${generationTime}ms`);
+      console.log(`GPT-Image-1 generation successful in ${generationTime}ms`);
       console.log('Generated image URL:', response.data[0].url);
       return response.data[0].url;
       
     } catch (error) {
       const generationTime = Date.now() - startTime;
-      console.error(`DALL-E 3 Image Generation Error after ${generationTime}ms:`, error);
+      console.error(`GPT-Image-1 Image Generation Error after ${generationTime}ms:`, error);
       console.error('Error details:', {
         message: error.message,
         status: error.status,
         code: error.code,
         type: error.type
       });
-      throw new Error(`Failed to generate packing image: ${error.message}`);
+      
+      // Fallback to DALL-E 3 if GPT-Image-1 fails
+      console.log('Attempting fallback to DALL-E 3...');
+      try {
+        const fallbackResponse = await openai.images.generate({
+          model: "dall-e-3",
+          prompt: prompt,
+          n: 1,
+          size: "1024x1024",
+          quality: "standard",
+          style: "natural"
+        });
+        
+        const fallbackTime = Date.now() - startTime;
+        console.log(`DALL-E 3 fallback successful in ${fallbackTime}ms`);
+        return fallbackResponse.data[0].url;
+        
+      } catch (fallbackError) {
+        console.error('Both GPT-Image-1 and DALL-E 3 failed:', fallbackError);
+        throw new Error(`Failed to generate packing image with both models: ${error.message}`);
+      }
     }
   }
 }

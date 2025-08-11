@@ -183,7 +183,7 @@ const VisualPackingResults = ({
 
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800">
-                <span className="font-medium">✨ AI Magic in Progress:</span> We're creating 2-3 different packing strategies with professional-quality visuals tailored specifically for your items and {selectedLuggage?.name.toLowerCase() || 'luggage'}.
+                <span className="font-medium">✨ AI Magic in Progress:</span> We're creating 2-3 different packing strategies with GPT-Image-1 professional-quality visuals tailored specifically for your items and {selectedLuggage?.name.toLowerCase() || 'luggage'}.
               </p>
             </div>
           </div>
