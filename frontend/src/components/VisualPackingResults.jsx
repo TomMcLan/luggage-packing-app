@@ -183,7 +183,7 @@ const VisualPackingResults = ({
 
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800">
-                <span className="font-medium">✨ AI Magic in Progress:</span> We're creating 4-5 different packing strategies with professional-quality visuals tailored specifically for your items and {selectedLuggage?.name.toLowerCase() || 'luggage'}.
+                <span className="font-medium">✨ AI Magic in Progress:</span> We're creating 2-3 different packing strategies with professional-quality visuals tailored specifically for your items and {selectedLuggage?.name.toLowerCase() || 'luggage'}.
               </p>
             </div>
           </div>
@@ -277,7 +277,7 @@ const VisualPackingResults = ({
           Back to photo upload
         </button>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">AI-Generated Packing Layouts</h1>
-        <p className="text-gray-600">5 optimal packing strategies visualized with AI</p>
+        <p className="text-gray-600">2-3 optimal packing strategies visualized with AI</p>
       </div>
 
       {/* Layout Selection Tabs */}

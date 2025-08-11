@@ -369,7 +369,7 @@ const ItemConfirmation = ({ detectedItems, imageUrl, onItemsConfirmed, onBack })
                         Visual AI Packing
                       </h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        Get AI-generated images showing 5 optimal packing layouts
+                        Get AI-generated images showing 2-3 optimal packing layouts
                       </p>
                       <div className="flex items-center mt-3 text-xs text-purple-600">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -392,7 +392,7 @@ const ItemConfirmation = ({ detectedItems, imageUrl, onItemsConfirmed, onBack })
                   <p className="text-sm font-medium text-blue-800">Visual AI Packing Features</p>
                   <ul className="text-sm text-blue-700 mt-1 space-y-1">
                     <li>• Real-world size estimation using reference objects</li>
-                    <li>• 5 different packing strategies with AI-generated visuals</li>
+                    <li>• 2-3 different packing strategies with AI-generated visuals</li>
                     <li>• 3D simulation with optimal item placement</li>
                     <li>• Detailed labeling and instructions for each layout</li>
                   </ul>
