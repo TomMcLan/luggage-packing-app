@@ -174,33 +174,67 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
   }
 
   async generatePackingImage(prompt) {
-    console.log('Generating packing image with gpt-image-1 model...');
+    console.log('Attempting image generation with gpt-image-1 model...');
+    
+    const openai = this.getOpenAI();
     
     try {
-      const openai = this.getOpenAI();
-      
-      // Use gpt-image-1 model for image generation
+      // First attempt: Try gpt-image-1 model
       const response = await openai.images.generate({
         model: "gpt-image-1",
         prompt: prompt,
         n: 1,
         size: "1024x1024",
-        quality: "standard", // Try with quality parameter
-        response_format: "url" // Ensure URL response format
+        quality: "standard",
+        response_format: "url"
       });
       
-      console.log('Successfully generated image with gpt-image-1');
+      console.log('✅ SUCCESS: gpt-image-1 model worked!');
       return response.data[0].url;
       
     } catch (error) {
-      console.error('gpt-image-1 generation error:', error);
+      console.error('❌ gpt-image-1 failed:', error.message);
       
-      // If gpt-image-1 fails, provide detailed error info
+      // Log detailed error information
       if (error.response?.data) {
-        console.error('OpenAI API error response:', error.response.data);
+        console.error('OpenAI API error response:', JSON.stringify(error.response.data, null, 2));
       }
       
-      throw new Error(`Image generation failed with gpt-image-1: ${error.message}`);
+      // Check if it's a model error and try fallback
+      if (error.response?.status === 400 || error.message?.toLowerCase().includes('model')) {
+        console.log('🔄 gpt-image-1 not available, trying DALL-E 3 fallback...');
+        
+        try {
+          const fallbackResponse = await openai.images.generate({
+            model: "dall-e-3",
+            prompt: prompt,
+            n: 1,
+            size: "1024x1024",
+            quality: "standard",
+            style: "natural"
+          });
+          
+          console.log('✅ Fallback successful with DALL-E 3');
+          return fallbackResponse.data[0].url;
+          
+        } catch (fallbackError) {
+          console.error('❌ DALL-E 3 fallback also failed:', fallbackError.message);
+          
+          // Final fallback to DALL-E 2
+          console.log('🔄 Trying DALL-E 2 as final fallback...');
+          const finalResponse = await openai.images.generate({
+            model: "dall-e-2",
+            prompt: prompt,
+            n: 1,
+            size: "1024x1024"
+          });
+          
+          console.log('✅ Final fallback successful with DALL-E 2');
+          return finalResponse.data[0].url;
+        }
+      }
+      
+      throw new Error(`All image generation models failed. Last error: ${error.message}`);
     }
   }
 }
