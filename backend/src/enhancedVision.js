@@ -175,10 +175,13 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
 
   async generatePackingImage(prompt) {
     console.log('Generating packing image with DALL-E 3...');
+    console.log('Prompt length:', prompt.length, 'characters');
+    const startTime = Date.now();
     
     try {
       const openai = this.getOpenAI();
       
+      console.log('Sending request to DALL-E 3...');
       const response = await openai.images.generate({
         model: "dall-e-3",
         prompt: prompt,
@@ -188,10 +191,20 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
         style: "natural"
       });
       
+      const generationTime = Date.now() - startTime;
+      console.log(`DALL-E 3 generation successful in ${generationTime}ms`);
+      console.log('Generated image URL:', response.data[0].url);
       return response.data[0].url;
       
     } catch (error) {
-      console.error('DALL-E 3 Image Generation Error:', error);
+      const generationTime = Date.now() - startTime;
+      console.error(`DALL-E 3 Image Generation Error after ${generationTime}ms:`, error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        type: error.type
+      });
       throw new Error(`Failed to generate packing image: ${error.message}`);
     }
   }

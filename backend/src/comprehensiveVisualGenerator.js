@@ -175,7 +175,10 @@ class ComprehensiveVisualGenerator {
     const layouts = [];
 
     try {
-      // Layout 1: Template-based organization (if template available)
+      // QUICK FIX: Generate only ONE optimal layout to avoid timeout
+      // Priority order: Template > Size-optimized > Pro-efficiency > Basic
+      
+      // Layout 1: Template-based organization (if template available) - BEST OPTION
       if (template) {
         layouts.push({
           id: 'template-based',
@@ -187,9 +190,8 @@ class ComprehensiveVisualGenerator {
           prompt: await this.createTemplateBasedPrompt(originalImageUrl, container, template, items)
         });
       }
-
-      // Layout 2: Size-optimized based on reference calibration (if available)
-      if (referenceCalibration && referenceCalibration.confidence > 0.7) {
+      // Layout 2: Size-optimized based on reference calibration (if available and no template)
+      else if (referenceCalibration && referenceCalibration.confidence > 0.7) {
         layouts.push({
           id: 'size-optimized',
           name: 'Precision Size-Based Layout',
@@ -200,34 +202,25 @@ class ComprehensiveVisualGenerator {
           prompt: await this.createSizeOptimizedPrompt(originalImageUrl, container, items, referenceCalibration)
         });
       }
+      // Layout 3: Professional efficiency layout (fallback)
+      else {
+        let efficiencyTips = [];
+        try {
+          efficiencyTips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
+        } catch (e) {
+          console.error('Failed to get efficiency tips:', e);
+        }
 
-      // Layout 3: Professional efficiency layout
-      let efficiencyTips = [];
-      try {
-        efficiencyTips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
-      } catch (e) {
-        console.error('Failed to get efficiency tips:', e);
+        layouts.push({
+          id: 'pro-efficiency',
+          name: 'Professional Efficiency Layout',
+          method: 'Maximum Efficiency',
+          description: 'Space-maximizing layout using professional packing techniques',
+          strategy: 'pro-efficiency',
+          tips: efficiencyTips,
+          prompt: await this.createProEfficiencyPrompt(originalImageUrl, container, items)
+        });
       }
-
-      layouts.push({
-        id: 'pro-efficiency',
-        name: 'Professional Efficiency Layout',
-        method: 'Maximum Efficiency',
-        description: 'Space-maximizing layout using professional packing techniques',
-        strategy: 'pro-efficiency',
-        tips: efficiencyTips,
-        prompt: await this.createProEfficiencyPrompt(originalImageUrl, container, items)
-      });
-
-      // Layout 4: Travel-ready accessibility
-      layouts.push({
-        id: 'travel-ready',
-        name: 'Travel Accessibility Layout',
-        method: 'Easy Access',
-        description: 'Organized for easy access to essentials during travel',
-        strategy: 'accessibility',
-        prompt: await this.createAccessibilityPrompt(originalImageUrl, container, items)
-      });
 
       // Fallback: If no layouts generated, create a basic one
       if (layouts.length === 0) {
