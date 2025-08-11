@@ -174,26 +174,33 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
   }
 
   async generatePackingImage(prompt) {
-    console.log('Testing "gpt-image-1" model...');
+    console.log('Generating packing image with gpt-image-1 model...');
     
     try {
       const openai = this.getOpenAI();
       
-      // Test "gpt-image-1" model as requested
+      // Use gpt-image-1 model for image generation
       const response = await openai.images.generate({
         model: "gpt-image-1",
         prompt: prompt,
         n: 1,
-        size: "1024x1024" // Using 1024x1024 as shown in the curl example
+        size: "1024x1024",
+        quality: "standard", // Try with quality parameter
+        response_format: "url" // Ensure URL response format
       });
       
-      console.log('SUCCESS: gpt-image-1 model worked!');
+      console.log('Successfully generated image with gpt-image-1');
       return response.data[0].url;
       
     } catch (error) {
-      console.error('Image Generation Error with gpt-image-1:', error);
-      console.error('Full error details:', JSON.stringify(error, null, 2));
-      throw new Error(`Failed to generate packing image with gpt-image-1: ${error.message}`);
+      console.error('gpt-image-1 generation error:', error);
+      
+      // If gpt-image-1 fails, provide detailed error info
+      if (error.response?.data) {
+        console.error('OpenAI API error response:', error.response.data);
+      }
+      
+      throw new Error(`Image generation failed with gpt-image-1: ${error.message}`);
     }
   }
 }
