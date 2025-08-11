@@ -80,35 +80,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Test endpoint for Google Imagen
-app.get('/api/test-google-imagen', async (req, res) => {
-  try {
-    console.log('Testing Google Imagen via test endpoint...');
-    const googleImagen = require('./src/googleImagen');
-    
-    const testPrompt = "Professional overhead photograph of an open black travel suitcase with a red t-shirt, blue jeans, and white sneakers neatly organized inside. Clean product photography, professional lighting, 1024x1024 resolution.";
-    
-    const imageUrl = await googleImagen.generatePackingImage(testPrompt);
-    
-    res.json({
-      success: true,
-      message: "Google Imagen test successful!",
-      imageUrl: imageUrl,
-      model: "google-imagen",
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('Google Imagen test endpoint error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      model: "google-imagen",
-      details: "Google Imagen test failed - check logs for details",
-      timestamp: new Date().toISOString()
-    });
-  }
-});
 
 // GET /api/luggage - Get all luggage sizes
 app.get('/api/luggage', async (req, res) => {

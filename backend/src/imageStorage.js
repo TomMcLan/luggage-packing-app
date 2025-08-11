@@ -112,7 +112,7 @@ class ImageStorageService {
           method: generationData.method || 'unknown',
           luggageType: generationData.luggageType,
           itemCount: generationData.itemCount,
-          aiModel: generationData.aiModel || 'google-imagen'
+          aiModel: generationData.aiModel || 'dall-e-3'
         },
         type: 'generated-visual',
         status: 'stored'
