@@ -16,65 +16,14 @@ class GoogleImagenService {
   }
 
   async generatePackingImage(prompt) {
-    console.log('Generating packing image with Google Imagen 4...');
+    console.log('Note: Google Gemini API does not support image generation...');
+    console.log('This will immediately fall back to DALL-E 3');
     
-    try {
-      const genAI = this.getGoogleAI();
-      
-      // Use Imagen 4 model for image generation
-      const model = genAI.getGenerativeModel({ 
-        model: "imagen-3.0-generate-001" // Current available model
-      });
-
-      // Enhanced prompt for better packing visuals
-      const enhancedPrompt = `High-quality professional product photography: ${prompt}
-
-TECHNICAL SPECIFICATIONS:
-- Resolution: 1024x1024 pixels
-- Style: Clean product photography
-- Lighting: Professional studio lighting, even illumination
-- Background: Neutral, clean background
-- Focus: Sharp focus on all items
-- Composition: Overhead view, well-balanced layout
-
-QUALITY REQUIREMENTS:
-- Photorealistic rendering
-- Accurate colors and textures
-- Clear visibility of all items
-- Professional presentation quality
-- No text, labels, or branding visible`;
-
-      const result = await model.generateContent([{
-        text: enhancedPrompt
-      }]);
-      
-      const response = await result.response;
-      
-      if (response.candidates && response.candidates[0]) {
-        const candidate = response.candidates[0];
-        
-        // Check if the response contains image data
-        if (candidate.content && candidate.content.parts) {
-          for (const part of candidate.content.parts) {
-            if (part.inlineData && part.inlineData.mimeType === 'image/png') {
-              // Convert base64 to data URL
-              const base64Data = part.inlineData.data;
-              const imageUrl = `data:${part.inlineData.mimeType};base64,${base64Data}`;
-              console.log('Successfully generated image with Google Imagen');
-              return imageUrl;
-            }
-          }
-        }
-        
-        throw new Error('No image data found in Google Imagen response');
-      } else {
-        throw new Error('No candidates in Google Imagen response');
-      }
-      
-    } catch (error) {
-      console.error('Google Imagen generation error:', error);
-      throw new Error(`Failed to generate packing image with Google Imagen: ${error.message}`);
-    }
+    // Google's Gemini API does not currently support image generation
+    // The @google/generative-ai SDK is for text/vision, not image generation
+    // Google's actual image generation API (Imagen) is not available through this SDK
+    
+    throw new Error('Google Gemini API does not support image generation - falling back to DALL-E 3');
   }
 
   async generateWithFallback(prompt) {
