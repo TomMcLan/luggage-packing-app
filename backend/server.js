@@ -80,33 +80,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Test endpoint for gpt-image-1 model
-app.get('/api/test-image-model', async (req, res) => {
-  try {
-    console.log('Testing gpt-image-1 model via test endpoint...');
-    const enhancedVision = require('./src/enhancedVision');
-    
-    const testPrompt = "Professional overhead photograph of an open black travel suitcase with a red t-shirt, blue jeans, and white sneakers neatly organized inside.";
-    
-    const imageUrl = await enhancedVision.generatePackingImage(testPrompt);
-    
-    res.json({
-      success: true,
-      message: "gpt-image-1 model test successful!",
-      imageUrl: imageUrl,
-      model: "gpt-image-1"
-    });
-    
-  } catch (error) {
-    console.error('Test endpoint error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      model: "gpt-image-1",
-      details: "Model test failed - check logs for details"
-    });
-  }
-});
 
 // GET /api/luggage - Get all luggage sizes
 app.get('/api/luggage', async (req, res) => {
