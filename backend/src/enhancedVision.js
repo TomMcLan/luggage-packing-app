@@ -174,24 +174,16 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
   }
 
   async generatePackingImage(prompt) {
-    console.log('Generating packing image with DALL-E 3...');
+    console.log('Generating packing image with Google Imagen...');
     
     try {
-      const openai = this.getOpenAI();
+      const googleImagen = require('./googleImagen');
       
-      const response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: prompt,
-        n: 1,
-        size: "1024x1024",
-        quality: "standard",
-        style: "natural"
-      });
-      
-      return response.data[0].url;
+      // Use Google Imagen with fallback to DALL-E 3
+      return await googleImagen.generateWithFallback(prompt);
       
     } catch (error) {
-      console.error('DALL-E 3 Image Generation Error:', error);
+      console.error('Image Generation Error:', error);
       throw new Error(`Failed to generate packing image: ${error.message}`);
     }
   }
