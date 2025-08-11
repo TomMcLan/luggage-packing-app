@@ -110,7 +110,7 @@ class ComprehensiveVisualGenerator {
       }
 
       // Step 7: Generate multiple packing layouts
-      this.generationSteps.push('Creating multiple packing layout strategies...');
+      this.generationSteps.push('Creating 2 complementary packing layout strategies...');
       const layouts = await this.generateMultipleLayouts(
         detectionResult.items || [],
         finalContainer,
@@ -175,10 +175,10 @@ class ComprehensiveVisualGenerator {
     const layouts = [];
 
     try {
-      // QUICK FIX: Generate only ONE optimal layout to avoid timeout
-      // Priority order: Template > Size-optimized > Pro-efficiency > Basic
+      // OPTIMIZED: Generate TWO complementary layouts for variety within timeout limits
+      // This provides options while keeping generation time ~60-120 seconds
       
-      // Layout 1: Template-based organization (if template available) - BEST OPTION
+      // Layout 1: Best primary option (Template > Size-optimized > Pro-efficiency)
       if (template) {
         layouts.push({
           id: 'template-based',
@@ -189,9 +189,7 @@ class ComprehensiveVisualGenerator {
           template: template,
           prompt: await this.createTemplateBasedPrompt(originalImageUrl, container, template, items)
         });
-      }
-      // Layout 2: Size-optimized based on reference calibration (if available and no template)
-      else if (referenceCalibration && referenceCalibration.confidence > 0.7) {
+      } else if (referenceCalibration && referenceCalibration.confidence > 0.7) {
         layouts.push({
           id: 'size-optimized',
           name: 'Precision Size-Based Layout',
@@ -201,9 +199,7 @@ class ComprehensiveVisualGenerator {
           referenceCalibration: referenceCalibration,
           prompt: await this.createSizeOptimizedPrompt(originalImageUrl, container, items, referenceCalibration)
         });
-      }
-      // Layout 3: Professional efficiency layout (fallback)
-      else {
+      } else {
         let efficiencyTips = [];
         try {
           efficiencyTips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
@@ -219,6 +215,48 @@ class ComprehensiveVisualGenerator {
           strategy: 'pro-efficiency',
           tips: efficiencyTips,
           prompt: await this.createProEfficiencyPrompt(originalImageUrl, container, items)
+        });
+      }
+
+      // Layout 2: Complementary alternative approach
+      // If we have template, add accessibility; if we have size-optimized, add efficiency; if we have efficiency, add accessibility
+      if (template) {
+        // Template + Accessibility combination
+        layouts.push({
+          id: 'travel-ready',
+          name: 'Travel Accessibility Layout',
+          method: 'Easy Access',
+          description: 'Organized for easy access to essentials during travel',
+          strategy: 'accessibility',
+          prompt: await this.createAccessibilityPrompt(originalImageUrl, container, items)
+        });
+      } else if (referenceCalibration && referenceCalibration.confidence > 0.7) {
+        // Size-optimized + Efficiency combination
+        let efficiencyTips = [];
+        try {
+          efficiencyTips = organizingProTips.getEfficiencyTips('spaceSaving').slice(0, 3);
+        } catch (e) {
+          console.error('Failed to get efficiency tips:', e);
+        }
+
+        layouts.push({
+          id: 'pro-efficiency',
+          name: 'Professional Efficiency Layout',
+          method: 'Maximum Efficiency',
+          description: 'Space-maximizing layout using professional packing techniques',
+          strategy: 'pro-efficiency',
+          tips: efficiencyTips,
+          prompt: await this.createProEfficiencyPrompt(originalImageUrl, container, items)
+        });
+      } else {
+        // Efficiency + Accessibility combination
+        layouts.push({
+          id: 'travel-ready',
+          name: 'Travel Accessibility Layout',
+          method: 'Easy Access',
+          description: 'Organized for easy access to essentials during travel',
+          strategy: 'accessibility',
+          prompt: await this.createAccessibilityPrompt(originalImageUrl, container, items)
         });
       }
 
