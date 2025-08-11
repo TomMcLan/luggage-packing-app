@@ -187,13 +187,23 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
         prompt: prompt,
         n: 1,
         size: "1024x1024",
-        quality: "medium" // GPT-Image-1 uses: low, medium, high, auto
+        quality: "medium"
       });
       
       const generationTime = Date.now() - startTime;
       console.log(`GPT-Image-1 generation successful in ${generationTime}ms`);
-      console.log('Generated image URL:', response.data[0].url);
-      return response.data[0].url;
+      
+      // GPT-Image-1 returns b64_json instead of url
+      if (response.data[0].b64_json) {
+        const imageDataUrl = `data:image/png;base64,${response.data[0].b64_json}`;
+        console.log('Generated image as base64 data URL');
+        return imageDataUrl;
+      } else if (response.data[0].url) {
+        console.log('Generated image URL:', response.data[0].url);
+        return response.data[0].url;
+      } else {
+        throw new Error('No image data received from GPT-Image-1');
+      }
       
     } catch (error) {
       const generationTime = Date.now() - startTime;
@@ -222,8 +232,8 @@ Focus on accurate spatial relationships and provide precise bounding boxes for a
         return fallbackResponse.data[0].url;
         
       } catch (fallbackError) {
-        console.error('Both GPT-Image-1 and DALL-E 3 failed:', fallbackError);
-        throw new Error(`Failed to generate packing image with both models: ${error.message}`);
+        console.error('DALL-E 3 fallback also failed:', fallbackError);
+        throw new Error(`Both GPT-Image-1 and DALL-E 3 failed: ${error.message}`);
       }
     }
   }

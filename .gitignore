@@ -111,3 +111,7 @@ temp/
 # Deployment
 .vercel
 .railway
+
+# Test files (add this to ignore test files)
+test-*.js
+debug-*.js
